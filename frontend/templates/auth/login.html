@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Sign In{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5" style="background: linear-gradient(135deg, #FFF8ED 0%, #FFFBEB 60%, #ECFDF5 100%);">
+  <div style="width: 100%; max-width: 440px; padding: 0 1rem;">
+
+    <div class="text-center mb-5">
+      <a href="{{ url_for('main.landing') }}" class="d-inline-flex align-items-center gap-2 text-decoration-none mb-3">
+        <div style="width:44px;height:44px;background:linear-gradient(135deg,var(--color-primary),var(--color-primary-light));border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-primary)">
+          <svg width="22" height="22" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <span style="font-family:var(--font-heading);font-size:1.5rem;font-weight:700;color:var(--color-primary)">GutGuard</span>
+      </a>
+      <h1 style="font-size:var(--text-2xl);font-family:var(--font-heading)">Welcome back</h1>
+      <p class="text-muted">Sign in to continue tracking your meal habits.</p>
+    </div>
+
+    <div class="gg-card shadow-gg-lg">
+      <form method="POST" action="{{ url_for('auth.login') }}" novalidate id="loginForm">
+        {{ form.hidden_tag() }}
+
+        <div class="mb-4">
+          <label class="gg-label" for="email">College Email</label>
+          <input type="email" name="email" id="email" class="gg-input" autocomplete="email"
+                 value="{{ form.email.data or '' }}" required
+                 placeholder="you@college.edu"
+                 {% if form.email.errors %}aria-describedby="email-error" aria-invalid="true"{% endif %}>
+          {% if form.email.errors %}
+          <div id="email-error" class="gg-form-error" role="alert">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {{ form.email.errors[0] }}
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="mb-4">
+          <label class="gg-label" for="password">Password</label>
+          <div class="position-relative">
+            <input type="password" name="password" id="password" class="gg-input" autocomplete="current-password"
+                   required placeholder="Your password"
+                   {% if form.password.errors %}aria-describedby="password-error" aria-invalid="true"{% endif %}>
+            <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y pe-3"
+                    id="togglePassword" aria-label="Show or hide password" style="color:var(--color-foreground-muted)">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          {% if form.password.errors %}
+          <div id="password-error" class="gg-form-error" role="alert">{{ form.password.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <div class="form-check" style="margin:0">
+            <input class="form-check-input" type="checkbox" name="remember_me" id="remember_me">
+            <label class="form-check-label text-muted" for="remember_me" style="font-size:0.875rem">Keep me signed in</label>
+          </div>
+        </div>
+
+        <button type="submit" class="gg-btn gg-btn-primary w-100 gg-btn-lg" id="submitBtn">
+          Sign In
+        </button>
+      </form>
+
+      <div class="text-center mt-4 pt-3 border-top">
+        <span class="text-muted" style="font-size:0.875rem">Don't have an account?</span>
+        <a href="{{ url_for('auth.register') }}" class="ms-1 fw-600" style="color:var(--color-accent);font-weight:600">
+          Create one free
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.getElementById('togglePassword')?.addEventListener('click', function() {
+    const pwd = document.getElementById('password');
+    pwd.type = pwd.type === 'password' ? 'text' : 'password';
+  });
+</script>
+{% endblock %}

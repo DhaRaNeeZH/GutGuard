@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% block title %}Weekly Insights{% endblock %}
+
+{% block content %}
+<div class="gg-page">
+<div class="container">
+
+  <div class="gg-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+    <div>
+      <h1 class="gg-page-title">Weekly Insights</h1>
+      <p class="gg-page-subtitle">
+        Week of {{ week_start.strftime("%d %b") }} – {{ week_end.strftime("%d %b %Y") }}
+        &mdash; based only on your logged meals.
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      {% if week_offset < 4 %}
+      <a href="{{ url_for('insights.index', week_offset=week_offset+1) }}" class="gg-btn gg-btn-ghost gg-btn-sm">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+        Previous week
+      </a>
+      {% endif %}
+      {% if week_offset > 0 %}
+      <a href="{{ url_for('insights.index', week_offset=week_offset-1) }}" class="gg-btn gg-btn-ghost gg-btn-sm">
+        Next week
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Habit Alerts -->
+  {% if alerts %}
+  <section aria-label="Habit observations" class="mb-5">
+    <h2 class="gg-card-title mb-3" style="font-size:1.1rem">Habit Observations</h2>
+    <div class="gg-alert gg-alert-info mb-3" style="font-size:0.82rem">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div>These observations are based solely on your logged meal data and project-defined rules (not medical thresholds).
+      They reflect patterns in what you've recorded, not a clinical assessment of your health.</div>
+    </div>
+    {% for alert in alerts %}
+    <div class="gg-alert {% if alert.type=='success' %}gg-alert-success{% elif alert.type=='warning' %}gg-alert-warning{% else %}gg-alert-info{% endif %}">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0" aria-hidden="true">
+        {% if alert.type=='success' %}<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+        {% else %}<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>{% endif %}
+      </svg>
+      <div>
+        <div style="font-weight:700;margin-bottom:2px">{{ alert.title }}</div>
+        <div style="font-size:0.87rem">{{ alert.message }}</div>
+        <div class="text-muted mt-1" style="font-size:0.72rem">{{ alert.note }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <!-- Stat Row -->
+  <div class="row g-3 mb-5">
+    <div class="col-6 col-md-3">
+      <div class="gg-stat-card">
+        <div class="gg-stat-icon green">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div>
+          <div class="gg-stat-value">{{ consistency_pct }}%</div>
+          <div class="gg-stat-label">Consistency</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="gg-stat-card">
+        <div class="gg-stat-icon amber">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/></svg>
+        </div>
+        <div>
+          <div class="gg-stat-value">{{ meals | length }}</div>
+          <div class="gg-stat-label">Meals Logged</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="gg-stat-card">
+        <div class="gg-stat-icon blue">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        </div>
+        <div>
+          <div class="gg-stat-value">{{ total_water_ml | int }}</div>
+          <div class="gg-stat-label">Water (ml)</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="gg-stat-card">
+        <div class="gg-stat-icon amber">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/></svg>
+        </div>
+        <div>
+          <div class="gg-stat-value">{{ days_with_meals | length }}/{{ days_elapsed }}</div>
+          <div class="gg-stat-label">Days Logged</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Meals per day chart -->
+    <div class="col-lg-7">
+      <div class="gg-card">
+        <h2 class="gg-card-title mb-4">Meals Per Day</h2>
+        <div class="gg-chart-container">
+          <canvas id="mealsPerDayChart" role="img" aria-label="Bar chart of meals logged per day this week"></canvas>
+        </div>
+        <p class="text-muted text-center mt-2" style="font-size:0.75rem">
+          Days showing 0 may not be skipped meals — they may simply not have been logged.
+        </p>
+      </div>
+    </div>
+
+    <!-- Meal type pie chart -->
+    <div class="col-lg-5">
+      <div class="gg-card">
+        <h2 class="gg-card-title mb-4">Meal Type Breakdown</h2>
+        {% if meals %}
+        <div class="gg-chart-container" style="height:200px">
+          <canvas id="mealTypeChart" role="img" aria-label="Pie chart of meal types logged this week"></canvas>
+        </div>
+        <div class="gg-chart-legend mt-3">
+          {% for mt, color, label in [
+            ("breakfast","#D97706","Breakfast"),
+            ("lunch","#059669","Lunch"),
+            ("dinner","#7C3AED","Dinner"),
+            ("snack","#0284C7","Snack"),
+          ] %}
+          <div class="gg-chart-legend-item">
+            <div class="gg-legend-dot" style="background:{{ color }}"></div>
+            {{ label }}: <strong>{{ type_counts[mt] }}</strong>
+          </div>
+          {% endfor %}
+        </div>
+        <!-- Accessible data table -->
+        <details class="mt-3">
+          <summary class="text-muted" style="font-size:0.8rem;cursor:pointer">View data table</summary>
+          <table class="table table-sm mt-2">
+            <caption class="visually-hidden">Meal type counts for the week</caption>
+            <thead><tr><th>Type</th><th>Count</th></tr></thead>
+            <tbody>
+              {% for mt in ["breakfast","lunch","dinner","snack"] %}
+              <tr><td>{{ mt | capitalize }}</td><td>{{ type_counts[mt] }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </details>
+        {% else %}
+        <div class="gg-empty" style="padding: 2rem 1rem">
+          <p class="gg-empty-subtitle">No meals logged this week yet.</p>
+          <a href="{{ url_for('meals.log_meal') }}" class="gg-btn gg-btn-primary gg-btn-sm">Log a Meal</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Food category distribution -->
+    {% if cat_counts %}
+    <div class="col-12">
+      <div class="gg-card">
+        <h2 class="gg-card-title mb-4">Food Categories This Week</h2>
+        <p class="text-muted mb-3" style="font-size:0.83rem">
+          Counts individual food items logged in each category (catalogue foods only; custom foods are excluded from category analysis).
+        </p>
+        <div class="row g-3">
+          {% for cat, count in (cat_counts.items() | sort(attribute=1, reverse=True))[:10] %}
+          <div class="col-md-6">
+            <div class="d-flex justify-content-between align-items-center mb-1" style="font-size:0.875rem">
+              <span>{{ cat }}</span>
+              <span class="gg-badge gg-badge-muted">{{ count }}</span>
+            </div>
+            <div class="gg-progress">
+              {% set max_count = (cat_counts.values() | max) %}
+              <div class="gg-progress-bar amber" style="width: {{ (count / max_count * 100) | int }}%"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Methodology note -->
+  <div class="gg-card mt-4" style="background:var(--color-muted-bg)">
+    <h2 class="gg-card-title" style="font-size:1rem">About These Figures</h2>
+    <p class="text-muted mb-0" style="font-size:0.82rem">
+      All charts and percentages on this page are calculated from meals you have logged in GutGuard.
+      <strong>Consistency %</strong> = days with ≥1 logged meal ÷ days elapsed in the week (not the full 7-day week).
+      An unlogged day does not necessarily mean you skipped meals.
+      No medical thresholds are applied. These are personal habit observations only.
+    </p>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  feather.replace({'aria-hidden': 'true'});
+
+  const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      tooltip: {
+        backgroundColor: 'rgba(15,23,42,0.9)',
+        padding: 10,
+        cornerRadius: 10,
+      }
+    }
+  };
+
+  // Meals per day bar chart
+  const mealsPerDay = {{ meals_per_day | tojson }};
+  const dayLabels  = Object.keys(mealsPerDay).map(d => {
+    const date = new Date(d + 'T12:00:00');
+    return date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' });
+  });
+  const dayCounts = Object.values(mealsPerDay);
+
+  const ctx1 = document.getElementById('mealsPerDayChart');
+  if (ctx1) {
+    new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: dayLabels,
+        datasets: [{
+          label: 'Meals Logged',
+          data: dayCounts,
+          backgroundColor: dayCounts.map(v => v === 0 ? 'rgba(168,162,158,0.3)' : 'rgba(5,150,105,0.75)'),
+          borderColor:     dayCounts.map(v => v === 0 ? '#A8A29E' : '#059669'),
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        ...chartDefaults,
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.04)' } },
+          x: { grid: { display: false } }
+        },
+        plugins: { ...chartDefaults.plugins, legend: { display: false } }
+      }
+    });
+  }
+
+  // Meal type doughnut chart
+  const typeCounts = {{ type_counts | tojson }};
+  const ctx2 = document.getElementById('mealTypeChart');
+  if (ctx2 && Object.values(typeCounts).some(v => v > 0)) {
+    new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: ['Breakfast','Lunch','Dinner','Snack'],
+        datasets: [{
+          data: [typeCounts.breakfast, typeCounts.lunch, typeCounts.dinner, typeCounts.snack],
+          backgroundColor: ['#D97706','#059669','#7C3AED','#0284C7'],
+          borderWidth: 2,
+          borderColor: '#fff',
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        ...chartDefaults,
+        plugins: {
+          ...chartDefaults.plugins,
+          legend: { display: false }
+        },
+        cutout: '60%',
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

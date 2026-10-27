@@ -1,0 +1,73 @@
+# GutGuard .gitignore
+
+# Environment & secrets
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# IDE & Agent tooling
+.vscode/
+.idea/
+.agents/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Flask & Database
+instance/
+*.sqlite
+*.db
+database/*.db
+database/*.sqlite
+
+# Migrations (keep env.py but not generated revisions in gitignore for now)
+# migrations/versions/
+
+# Test output
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Generated reports
+reports_output/
+*.pdf
+
+# Log files
+*.log
+logs/
+
+# Node (if any frontend tooling added later)
+node_modules/
+
+# Student data — NEVER commit real student records
+data/real_students/
+data/surveys/real/

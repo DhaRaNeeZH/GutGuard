@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Admin – Food Catalogue{% endblock %}
+{% block content %}
+<div class="gg-page">
+<div class="container">
+  <div class="gg-page-header d-flex justify-content-between align-items-start">
+    <div>
+      <h1 class="gg-page-title">Food Catalogue</h1>
+      <p class="gg-page-subtitle">Browse and verify catalogue entries.</p>
+    </div>
+    <a href="{{ url_for('admin.index') }}" class="gg-btn gg-btn-ghost gg-btn-sm">← Admin Home</a>
+  </div>
+
+  <div class="gg-card mb-4">
+    <form method="GET" action="{{ url_for('admin.catalogue') }}" class="d-flex gap-3">
+      <input type="text" name="q" value="{{ q }}" class="gg-input" placeholder="Search foods…">
+      <button type="submit" class="gg-btn gg-btn-primary">Search</button>
+    </form>
+  </div>
+
+  <div class="gg-card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <caption class="visually-hidden">Food catalogue entries</caption>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Region</th>
+            <th>Veg?</th>
+            <th>Verified?</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for food in foods %}
+          <tr>
+            <td><strong>{{ food.name }}</strong>
+              {% if food.aliases %}<div class="text-muted" style="font-size:0.75rem">Also: {{ food.aliases | map(attribute='alias') | join(', ') | truncate(50) }}</div>{% endif %}
+            </td>
+            <td class="text-muted" style="font-size:0.85rem">{{ food.category.name if food.category else '—' }}</td>
+            <td class="text-muted" style="font-size:0.85rem">{{ food.region or '—' }}</td>
+            <td>
+              {% if food.is_vegetarian is none %}<span class="gg-badge gg-badge-muted">?</span>
+              {% elif food.is_vegetarian %}<span class="gg-badge gg-badge-accent">Veg</span>
+              {% else %}<span class="gg-badge gg-badge-danger">Non-veg</span>{% endif %}
+            </td>
+            <td>
+              {% if food.is_verified %}<span class="gg-badge gg-badge-success">✓ Verified</span>
+              {% else %}<span class="gg-badge gg-badge-warning">Pending</span>{% endif %}
+            </td>
+            <td>
+              {% if not food.is_verified %}
+              <form method="POST" action="{{ url_for('admin.verify_food', food_id=food.id) }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="gg-btn gg-btn-sm gg-btn-ghost">Verify</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}

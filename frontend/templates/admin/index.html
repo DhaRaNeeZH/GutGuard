@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<div class="gg-page">
+<div class="container">
+  <div class="gg-page-header">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <span class="gg-badge gg-badge-danger">Admin</span>
+      <h1 class="gg-page-title mb-0">Admin Dashboard</h1>
+    </div>
+    <p class="gg-page-subtitle">Manage the food catalogue and review submissions.</p>
+  </div>
+
+  <div class="row g-4 mb-5">
+    <div class="col-md-4">
+      <div class="gg-stat-card">
+        <div class="gg-stat-icon green">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/></svg>
+        </div>
+        <div>
+          <div class="gg-stat-value">{{ total_foods }}</div>
+          <div class="gg-stat-label">Active Foods</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="gg-stat-card">
+        <div class="gg-stat-icon amber">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+        </div>
+        <div>
+          <div class="gg-stat-value">{{ pending_custom }}</div>
+          <div class="gg-stat-label">Pending Submissions</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="gg-stat-card">
+        <div class="gg-stat-icon blue">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <div>
+          <div class="gg-stat-value">{{ total_students }}</div>
+          <div class="gg-stat-label">Students Registered</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="gg-card">
+        <h2 class="gg-card-title mb-4">Catalogue Management</h2>
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('admin.catalogue') }}" class="gg-btn gg-btn-outline">Browse Food Catalogue</a>
+          <a href="{{ url_for('admin.custom_foods') }}" class="gg-btn {% if pending_custom > 0 %}gg-btn-primary{% else %}gg-btn-ghost{% endif %}">
+            Review Custom Foods
+            {% if pending_custom > 0 %}<span class="gg-badge gg-badge-danger ms-1">{{ pending_custom }}</span>{% endif %}
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="gg-card">
+        <h2 class="gg-card-title mb-4">Data Notes</h2>
+        <ul class="text-muted" style="font-size:0.875rem;padding-left:1.25rem">
+          <li>Admin cannot view individual student meal journals by default.</li>
+          <li>Custom food submissions show the food name only — not who submitted them.</li>
+          <li>All aggregate project data is available through the insights module when logged in as a student.</li>
+          <li>Use the catalogue review queue to promote student-submitted foods to the main catalogue.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}

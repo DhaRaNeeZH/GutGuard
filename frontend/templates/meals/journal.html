@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% block title %}Meal Journal{% endblock %}
+
+{% block content %}
+<div class="gg-page">
+<div class="container">
+  <div class="gg-page-header d-flex flex-wrap align-items-start justify-content-between gap-3">
+    <div>
+      <h1 class="gg-page-title">Meal Journal</h1>
+      <p class="gg-page-subtitle">Your personal log of meals and water for <strong>{{ view_date.strftime("%A, %d %B %Y") }}</strong></p>
+    </div>
+    <a href="{{ url_for('meals.log_meal') }}" class="gg-btn gg-btn-primary">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Log a Meal
+    </a>
+  </div>
+
+  <!-- Date Navigation -->
+  <div class="d-flex align-items-center gap-3 mb-5 flex-wrap">
+    {% set prev_date = view_date - timedelta(days=1) %}
+    {% set next_date = view_date + timedelta(days=1) %}
+    <a href="{{ url_for('meals.journal', date=prev_date.isoformat()) }}" class="gg-btn gg-btn-ghost gg-btn-sm"
+       aria-label="Previous day: {{ prev_date.strftime('%d %b') }}">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      {{ prev_date.strftime("%d %b") }}
+    </a>
+
+    <form method="GET" action="{{ url_for('meals.journal') }}" class="d-flex align-items-center gap-2" aria-label="Jump to date">
+      <input type="date" name="date" value="{{ view_date.isoformat() }}"
+             class="gg-input" style="max-width:180px;padding:0.4rem 0.75rem" onchange="this.form.submit()"
+             aria-label="Select date to view">
+    </form>
+
+    {% if next_date <= today %}
+    <a href="{{ url_for('meals.journal', date=next_date.isoformat()) }}" class="gg-btn gg-btn-ghost gg-btn-sm"
+       aria-label="Next day: {{ next_date.strftime('%d %b') }}">
+      {{ next_date.strftime("%d %b") }}
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+    {% endif %}
+
+    {% if view_date != today %}
+    <a href="{{ url_for('meals.journal') }}" class="gg-btn gg-btn-outline gg-btn-sm">Today</a>
+    {% endif %}
+  </div>
+
+  <div class="row g-4">
+    <!-- Meals Column -->
+    <div class="col-lg-8">
+      {% if meals %}
+        {% for meal_type in ["breakfast","lunch","dinner","snack"] %}
+          {% set type_meals = meals | selectattr("meal_type", "equalto", meal_type) | list %}
+          {% if type_meals %}
+          <div class="gg-card mb-4">
+            <div class="gg-card-header">
+              <div class="d-flex align-items-center gap-2">
+                <div class="gg-stat-icon {% if meal_type=='breakfast' %}amber{% elif meal_type=='lunch' %}green{% elif meal_type=='dinner' %}blue{% else %}amber{% endif %}" style="width:36px;height:36px">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    {% if meal_type=='breakfast' %}<path d="M12 3v1m0 16v1M3 12h1m16 0h1"/>
+                    {% elif meal_type=='lunch'   %}<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20"/>
+                    {% elif meal_type=='dinner'  %}<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    {% else %}<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>{% endif %}
+                  </svg>
+                </div>
+                <h2 class="gg-card-title mb-0">{{ meal_type | capitalize }}</h2>
+              </div>
+            </div>
+
+            {% for meal in type_meals %}
+            <div class="mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                  <div class="text-muted mb-2" style="font-size:0.82rem">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    {{ meal.meal_date.strftime("%I:%M %p") }}
+                    {% if meal.notes %} · <em>{{ meal.notes }}</em>{% endif %}
+                  </div>
+
+                  {% if meal.items %}
+                  <div class="d-flex flex-wrap gap-2">
+                    {% for item in meal.items %}
+                    <div class="gg-card" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; margin-bottom: 0; border-color: var(--color-border-subtle)">
+                      <strong>{{ item.food_name }}</strong>
+                      {% if item.quantity or item.unit %}
+                      <span class="text-muted"> · {{ item.quantity | default('') }} {{ item.unit | default('') }}</span>
+                      {% endif %}
+                    </div>
+                    {% endfor %}
+                  </div>
+                  {% else %}
+                  <span class="text-muted">No food items recorded.</span>
+                  {% endif %}
+                </div>
+
+                <div class="d-flex gap-2 ms-3 flex-shrink-0">
+                  <a href="{{ url_for('meals.edit_meal', meal_id=meal.id) }}" class="gg-btn gg-btn-ghost gg-btn-sm"
+                     aria-label="Edit this meal">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </a>
+                  <button type="button" class="gg-btn gg-btn-ghost gg-btn-sm"
+                          onclick="confirmDelete({{ meal.id }}, '{{ meal.meal_type | capitalize }}')"
+                          aria-label="Delete this meal">
+                    <svg width="14" height="14" fill="none" stroke="var(--color-danger)" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Hidden delete form -->
+            <form id="deleteForm_{{ meal.id }}" method="POST"
+                  action="{{ url_for('meals.delete_meal', meal_id=meal.id) }}" style="display:none">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            </form>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+      <div class="gg-card">
+        <div class="gg-empty">
+          <div class="gg-empty-icon">🍽️</div>
+          <h2 class="gg-empty-title">No meals logged for this day</h2>
+          <p class="gg-empty-subtitle">
+            {% if view_date == today %}
+            Start logging your meals for today.
+            {% else %}
+            No entries were recorded for {{ view_date.strftime('%d %b %Y') }}.
+            {% endif %}
+          </p>
+          {% if view_date == today %}
+          <a href="{{ url_for('meals.log_meal') }}" class="gg-btn gg-btn-primary">Log First Meal</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Water & Quick Log sidebar -->
+    <div class="col-lg-4">
+      <!-- Water Log Card -->
+      <div class="gg-card mb-4" style="border-color: #BAE6FD; background: var(--color-info-light)">
+        <div class="gg-card-header" style="margin-bottom: var(--space-3)">
+          <h2 class="gg-card-title" style="color: var(--color-info); font-size: 1rem">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+            Water Intake
+          </h2>
+        </div>
+
+        {% set total_ml = water_logs | sum(attribute='quantity') | default(0) %}
+        {% if water_logs %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-end">
+            <span class="text-muted" style="font-size:0.82rem">Total today</span>
+            <span style="font-family:var(--font-heading);font-size:1.5rem;font-weight:700;color:var(--color-info)">
+              {{ total_ml | int }}ml
+            </span>
+          </div>
+          <div class="gg-progress mt-1">
+            <div class="gg-progress-bar" style="background:var(--color-info);width:{{ [((total_ml / 2000) * 100), 100] | min }}%"></div>
+          </div>
+          <p class="text-muted" style="font-size:0.72rem;margin-top:4px">Based on 2,000 ml reference for illustration</p>
+        </div>
+
+        {% for wlog in water_logs %}
+        <div class="d-flex justify-content-between align-items-center py-1 border-bottom" style="font-size:0.82rem">
+          <span>{{ wlog.logged_at.strftime("%I:%M %p") }} · {{ (wlog.quantity | int) if wlog.quantity else '?' }}{{ wlog.unit }}</span>
+          <form method="POST" action="{{ url_for('meals.delete_water', log_id=wlog.id) }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-link btn-sm p-0 text-danger" aria-label="Remove this water entry">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </form>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted" style="font-size:0.85rem">No water logged for this day.</p>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('meals.log_water') }}" class="mt-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="date" value="{{ view_date.isoformat() }}T12:00">
+          <div class="d-flex gap-2">
+            <input type="number" name="quantity" class="gg-input" min="0" step="50"
+                   placeholder="ml" inputmode="numeric" aria-label="Water amount in ml">
+            <button type="submit" class="gg-btn gg-btn-sm" style="background:var(--color-info);color:white;border:none;white-space:nowrap">
+              + Log
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Quick Log -->
+      <div class="gg-card">
+        <h2 class="gg-card-title mb-3" style="font-size:1rem">Quick Log</h2>
+        <div class="d-grid gap-2">
+          {% for mt in ["breakfast","lunch","dinner","snack"] %}
+          <a href="{{ url_for('meals.log_meal') }}?meal_type={{ mt }}&date={{ view_date.isoformat() }}"
+             class="gg-btn gg-btn-ghost">
+            Log {{ mt | capitalize }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-modal="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content" style="border-radius:var(--radius-xl);border:2px solid var(--color-border)">
+      <div class="modal-header" style="border-bottom: 1px solid var(--color-border-subtle)">
+        <h3 class="modal-title" id="deleteModalLabel" style="font-family:var(--font-heading);font-size:1.1rem">Delete Meal?</h3>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cancel delete"></button>
+      </div>
+      <div class="modal-body" id="deleteModalBody" style="font-size:0.9rem"></div>
+      <div class="modal-footer" style="border-top: 1px solid var(--color-border-subtle)">
+        <button type="button" class="gg-btn gg-btn-ghost gg-btn-sm" data-bs-dismiss="modal">Keep it</button>
+        <button type="button" class="gg-btn gg-btn-danger gg-btn-sm" id="confirmDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const today = '{{ today.isoformat() }}';
+
+function confirmDelete(mealId, mealType) {
+  document.getElementById('deleteModalBody').textContent =
+    `This will permanently remove your ${mealType} entry and all its food items. This cannot be undone.`;
+  document.getElementById('confirmDeleteBtn').onclick = () => {
+    document.getElementById(`deleteForm_${mealId}`).submit();
+  };
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

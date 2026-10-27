@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Admin – Custom Foods{% endblock %}
+{% block content %}
+<div class="gg-page">
+<div class="container">
+  <div class="gg-page-header d-flex justify-content-between align-items-start">
+    <div>
+      <h1 class="gg-page-title">Custom Food Submissions</h1>
+      <p class="gg-page-subtitle">Review foods submitted by students and add them to the catalogue.</p>
+    </div>
+    <a href="{{ url_for('admin.index') }}" class="gg-btn gg-btn-ghost gg-btn-sm">← Admin Home</a>
+  </div>
+
+  {% if foods %}
+  <div class="gg-card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <caption class="visually-hidden">Pending custom food submissions</caption>
+        <thead>
+          <tr><th>Food Name</th><th>Submitted</th><th>Notes</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for f in foods %}
+          <tr>
+            <td><strong>{{ f.name }}</strong></td>
+            <td class="text-muted" style="font-size:0.85rem">{{ f.submitted_at.strftime("%d %b %Y") }}</td>
+            <td class="text-muted" style="font-size:0.85rem">{{ f.notes or '—' }}</td>
+            <td>
+              <div class="d-flex gap-2">
+                <form method="POST" action="{{ url_for('admin.approve_custom', food_id=f.id) }}" style="display:inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="gg-btn gg-btn-sm gg-btn-accent">Add to Catalogue</button>
+                </form>
+                <form method="POST" action="{{ url_for('admin.reject_custom', food_id=f.id) }}" style="display:inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="gg-btn gg-btn-sm gg-btn-ghost">Reject</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="gg-empty">
+    <div class="gg-empty-icon">✅</div>
+    <h2 class="gg-empty-title">No pending submissions</h2>
+    <p class="gg-empty-subtitle">All custom foods have been reviewed.</p>
+  </div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+{% block title %}Log a Meal{% endblock %}
+
+{% block content %}
+<div class="gg-page">
+<div class="container" style="max-width: 720px;">
+
+  <div class="gg-page-header">
+    <nav aria-label="Breadcrumb">
+      <ol class="breadcrumb" style="font-size:0.85rem">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('meals.journal') }}">Meal Journal</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Log a Meal</li>
+      </ol>
+    </nav>
+    <h1 class="gg-page-title">Log a Meal</h1>
+    <p class="gg-page-subtitle">Add what you ate — including multiple foods in one session.</p>
+  </div>
+
+  <div class="gg-card shadow-gg-lg">
+    <form method="POST" action="{{ url_for('meals.log_meal') }}" novalidate id="mealForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <!-- Step 1: Meal type -->
+      <fieldset class="mb-5">
+        <legend class="gg-label mb-3">What kind of meal is this?</legend>
+        <div class="meal-type-selector" role="group" aria-label="Meal type">
+          {% for value, label, icon_path in [
+            ("breakfast","Breakfast","M12 3v1m0 16v1M3 12h1m16 0h1m-2.22-6.78-.71.71M5.93 18.07l-.71.71M18.07 18.07l-.71-.71M5.93 5.93l-.71-.71M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"),
+            ("lunch","Lunch","M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20"),
+            ("dinner","Dinner","M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"),
+            ("snack","Snack","M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z")
+          ] %}
+          <input type="radio" name="meal_type" id="mt_{{ value }}" value="{{ value }}" class="meal-type-option"
+                 {% if loop.first %}checked{% endif %}
+                 {% if request.args.get('meal_type') == value %}checked{% endif %}>
+          <label for="mt_{{ value }}" class="meal-type-label">
+            <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="{{ icon_path }}"/>
+            </svg>
+            {{ label }}
+          </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+
+      <!-- Step 2: Date & Time -->
+      <div class="mb-5">
+        <label class="gg-label" for="meal_date">When did you eat?</label>
+        <input type="datetime-local" name="meal_date" id="meal_date" class="gg-input"
+               value="{{ now.strftime('%Y-%m-%dT%H:%M') }}" required
+               aria-describedby="date-hint">
+        <p id="date-hint" class="text-muted" style="font-size:0.8rem;margin-top:4px">
+          Defaults to right now. Change if logging a past meal.
+        </p>
+      </div>
+
+      <!-- Step 3: Foods -->
+      <div class="mb-5">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <label class="gg-label mb-0">What did you eat?</label>
+          <span class="gg-badge gg-badge-muted" id="itemCount">1 item</span>
+        </div>
+
+        <div id="foodItemsContainer">
+          <!-- Food Item Row Template (first row pre-rendered) -->
+          <div class="meal-item-row" data-item-index="0">
+            <button type="button" class="meal-item-remove" onclick="removeItem(this)" aria-label="Remove this food item" style="display:none">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div class="row g-3 align-items-end">
+              <div class="col-12">
+                <label class="gg-label" for="foodSearch_0">Food name</label>
+                <div class="food-search-wrapper">
+                  <input type="text" id="foodSearch_0" class="gg-input food-search"
+                         placeholder="Search Indian foods (e.g. Idli, Dosa, Biryani…)"
+                         autocomplete="off" data-index="0"
+                         aria-label="Search for a food item" aria-autocomplete="list"
+                         aria-controls="foodDropdown_0" aria-expanded="false">
+                  <input type="hidden" name="food_id[]" id="foodId_0" value="">
+                  <input type="hidden" name="custom_food_name[]" id="customName_0" value="">
+                  <div class="food-autocomplete" id="foodDropdown_0" role="listbox" aria-label="Food suggestions"></div>
+                </div>
+              </div>
+              <div class="col-5">
+                <label class="gg-label" for="qty_0">Quantity <span class="text-muted fw-normal">(optional)</span></label>
+                <input type="number" name="quantity[]" id="qty_0" class="gg-input"
+                       min="0" step="any" placeholder="E.g. 2" inputmode="decimal">
+              </div>
+              <div class="col-4">
+                <label class="gg-label" for="unit_0">Unit</label>
+                <select name="unit[]" id="unit_0" class="gg-input">
+                  <option value="piece">piece</option>
+                  <option value="plate">plate</option>
+                  <option value="cup">cup</option>
+                  <option value="bowl">bowl</option>
+                  <option value="g">g</option>
+                  <option value="ml">ml</option>
+                  <option value="serving">serving</option>
+                </select>
+              </div>
+              <div class="col-3">
+                <label class="gg-label" for="itemNote_0">Note</label>
+                <input type="text" name="item_notes[]" id="itemNote_0" class="gg-input"
+                       placeholder="Optional">
+              </div>
+            </div>
+          </div>
+        </div><!-- /foodItemsContainer -->
+
+        <div class="d-flex gap-2 mt-3">
+          <button type="button" class="gg-btn gg-btn-ghost gg-btn-sm" id="addFoodBtn" onclick="addFoodItem()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add another food
+          </button>
+          <button type="button" class="gg-btn gg-btn-ghost gg-btn-sm" id="addCustomBtn" onclick="addCustomFood()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            Can't find your food?
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 4: Meal Notes -->
+      <div class="mb-5">
+        <label class="gg-label" for="notes">Meal notes <span class="text-muted fw-normal">(optional)</span></label>
+        <textarea name="notes" id="notes" class="gg-textarea" placeholder="E.g. Mess food, late dinner, felt full…"></textarea>
+      </div>
+
+      <!-- Actions -->
+      <div class="d-flex gap-3 flex-wrap">
+        <button type="submit" class="gg-btn gg-btn-accent gg-btn-lg" id="saveBtn">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save Meal
+        </button>
+        <a href="{{ url_for('meals.journal') }}" class="gg-btn gg-btn-ghost gg-btn-lg">Cancel</a>
+      </div>
+
+      <!-- Validation error area -->
+      <div id="formErrors" role="alert" aria-live="polite" class="mt-3" style="display:none">
+        <div class="gg-alert gg-alert-danger"></div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Water logging shortcut -->
+  <div class="gg-card mt-4" style="background:var(--color-info-light); border-color: #BAE6FD">
+    <div class="d-flex align-items-center gap-4 flex-wrap">
+      <div style="flex:1">
+        <h2 class="gg-card-title" style="font-size:1rem;color:var(--color-info)">Log Water Intake</h2>
+        <p class="text-muted mb-0" style="font-size:0.85rem">
+          Water is tracked separately. Record how much you drank today.
+        </p>
+      </div>
+      <form method="POST" action="{{ url_for('meals.log_water') }}" class="d-flex gap-2 align-items-end flex-wrap">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="date" value="{{ now.strftime('%Y-%m-%dT%H:%M') }}">
+        <div>
+          <label class="gg-label" for="waterQty" style="font-size:0.8rem">Amount (ml)</label>
+          <input type="number" name="quantity" id="waterQty" class="gg-input" min="0" step="50"
+                 placeholder="250" style="width:110px" inputmode="numeric">
+        </div>
+        <button type="submit" class="gg-btn gg-btn-sm" style="background:var(--color-info);color:white;border:none">
+          Log Water
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+'use strict';
+let itemCount = 1;
+
+// ── Food Search Autocomplete ──────────────────────────────────────────────────
+function initFoodSearch(index) {
+  const searchInput = document.getElementById(`foodSearch_${index}`);
+  const dropdown    = document.getElementById(`foodDropdown_${index}`);
+  const foodIdInput = document.getElementById(`foodId_${index}`);
+  const customInput = document.getElementById(`customName_${index}`);
+  let debounceTimer = null;
+  let highlightedIdx = -1;
+
+  if (!searchInput) return;
+
+  searchInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const q = searchInput.value.trim();
+    foodIdInput.value  = '';
+    customInput.value  = '';
+
+    if (q.length < 1) { closeDropdown(); return; }
+
+    debounceTimer = setTimeout(() => fetchSuggestions(q), 200);
+  });
+
+  searchInput.addEventListener('keydown', e => {
+    const items = dropdown.querySelectorAll('.food-autocomplete-item');
+    if (e.key === 'ArrowDown')  { e.preventDefault(); highlight(Math.min(highlightedIdx + 1, items.length - 1)); }
+    if (e.key === 'ArrowUp')    { e.preventDefault(); highlight(Math.max(highlightedIdx - 1, -1)); }
+    if (e.key === 'Enter')      { e.preventDefault(); if (highlightedIdx >= 0) items[highlightedIdx]?.click(); }
+    if (e.key === 'Escape')     { closeDropdown(); }
+  });
+
+  document.addEventListener('click', e => {
+    if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) closeDropdown();
+  });
+
+  function fetchSuggestions(q) {
+    fetch(`/catalogue/search?q=${encodeURIComponent(q)}&limit=12`)
+      .then(r => r.json())
+      .then(foods => renderDropdown(q, foods))
+      .catch(() => closeDropdown());
+  }
+
+  function renderDropdown(q, foods) {
+    dropdown.innerHTML = '';
+    highlightedIdx = -1;
+
+    if (foods.length === 0) {
+      dropdown.innerHTML = `
+        <div class="food-autocomplete-empty">
+          No matches for "<strong>${escHtml(q)}</strong>".
+          <br>
+          <button type="button" class="gg-btn gg-btn-ghost gg-btn-sm mt-2"
+                  onclick="useCustomFood_${index}('${escHtml(q).replace(/'/g,"\\'")}')">
+            Add "${escHtml(q)}" as custom food
+          </button>
+        </div>`;
+      dropdown.classList.add('show');
+      return;
+    }
+
+    foods.forEach((f, i) => {
+      const item = document.createElement('div');
+      item.className = 'food-autocomplete-item';
+      item.setAttribute('role', 'option');
+      item.setAttribute('id', `option_${index}_${i}`);
+      item.innerHTML = `
+        <div>
+          <div class="food-item-name">${escHtml(f.name)}</div>
+          <div class="food-item-meta">${escHtml(f.category || '')}${f.region ? ' · ' + escHtml(f.region) : ''}</div>
+        </div>
+        ${f.is_vegetarian === true
+          ? '<span class="gg-badge gg-badge-accent" style="font-size:0.65rem">Veg</span>'
+          : f.is_vegetarian === false
+          ? '<span class="gg-badge gg-badge-danger" style="font-size:0.65rem">Non-Veg</span>'
+          : ''}`;
+      item.addEventListener('click', () => selectFood(f));
+      dropdown.appendChild(item);
+    });
+
+    // Custom option at bottom
+    const custom = document.createElement('div');
+    custom.className = 'food-autocomplete-item';
+    custom.style.borderTop = '1px solid var(--color-border-subtle)';
+    custom.style.color = 'var(--color-foreground-muted)';
+    custom.innerHTML = `<div><div class="food-item-name">Add "${escHtml(q)}" as custom food</div><div class="food-item-meta">Won't be in your catalogue, but counts in your log.</div></div>`;
+    custom.addEventListener('click', () => useCustomFood_idx(q));
+    dropdown.appendChild(custom);
+
+    dropdown.classList.add('show');
+    searchInput.setAttribute('aria-expanded', 'true');
+  }
+
+  function selectFood(f) {
+    searchInput.value = f.name;
+    foodIdInput.value = f.id;
+    customInput.value = '';
+    closeDropdown();
+  }
+
+  window[`useCustomFood_${index}`] = function(name) {
+    searchInput.value = name;
+    foodIdInput.value = 'custom';
+    customInput.value = name;
+    closeDropdown();
+  };
+
+  function useCustomFood_idx(name) { window[`useCustomFood_${index}`](name); }
+
+  function highlight(idx) {
+    const items = dropdown.querySelectorAll('.food-autocomplete-item');
+    items.forEach(el => el.classList.remove('highlighted'));
+    highlightedIdx = idx;
+    if (idx >= 0 && items[idx]) {
+      items[idx].classList.add('highlighted');
+      items[idx].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function closeDropdown() {
+    dropdown.classList.remove('show');
+    dropdown.innerHTML = '';
+    searchInput.setAttribute('aria-expanded', 'false');
+    highlightedIdx = -1;
+  }
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Add Food Item ─────────────────────────────────────────────────────────────
+function addFoodItem(isCustom = false) {
+  const idx = itemCount++;
+  const container = document.getElementById('foodItemsContainer');
+  const row = document.createElement('div');
+  row.className = 'meal-item-row';
+  row.dataset.itemIndex = idx;
+  row.innerHTML = `
+    <button type="button" class="meal-item-remove" onclick="removeItem(this)" aria-label="Remove this food item">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="row g-3 align-items-end">
+      <div class="col-12">
+        <label class="gg-label" for="foodSearch_${idx}">Food name</label>
+        ${isCustom
+          ? `<input type="text" id="foodSearch_${idx}" class="gg-input" name="custom_food_name[]"
+                    placeholder="Enter food name (will be saved as custom)" autocomplete="off">
+             <input type="hidden" name="food_id[]" value="custom">
+             <p class="text-muted" style="font-size:0.78rem;margin-top:4px">This will be saved as an unclassified food and can be reviewed by admin.</p>`
+          : `<div class="food-search-wrapper">
+               <input type="text" id="foodSearch_${idx}" class="gg-input food-search"
+                      placeholder="Search Indian foods…" autocomplete="off" data-index="${idx}"
+                      aria-label="Search for a food" aria-autocomplete="list"
+                      aria-controls="foodDropdown_${idx}" aria-expanded="false">
+               <input type="hidden" name="food_id[]" id="foodId_${idx}" value="">
+               <input type="hidden" name="custom_food_name[]" id="customName_${idx}" value="">
+               <div class="food-autocomplete" id="foodDropdown_${idx}" role="listbox"></div>
+             </div>`
+        }
+      </div>
+      <div class="col-5">
+        <label class="gg-label" for="qty_${idx}">Quantity</label>
+        <input type="number" name="quantity[]" id="qty_${idx}" class="gg-input" min="0" step="any" placeholder="E.g. 2" inputmode="decimal">
+      </div>
+      <div class="col-4">
+        <label class="gg-label" for="unit_${idx}">Unit</label>
+        <select name="unit[]" id="unit_${idx}" class="gg-input">
+          <option value="piece">piece</option>
+          <option value="plate">plate</option>
+          <option value="cup">cup</option>
+          <option value="bowl">bowl</option>
+          <option value="g">g</option>
+          <option value="ml">ml</option>
+          <option value="serving">serving</option>
+        </select>
+      </div>
+      <div class="col-3">
+        <label class="gg-label" for="itemNote_${idx}">Note</label>
+        <input type="text" name="item_notes[]" id="itemNote_${idx}" class="gg-input" placeholder="Optional">
+      </div>
+    </div>`;
+
+  container.appendChild(row);
+  if (!isCustom) initFoodSearch(idx);
+  updateItemCount();
+  row.querySelector('input[type="text"]')?.focus();
+}
+
+function addCustomFood() { addFoodItem(true); }
+
+function removeItem(btn) {
+  const row = btn.closest('.meal-item-row');
+  row.style.opacity = '0';
+  row.style.transform = 'scale(0.95)';
+  row.style.transition = 'all 0.2s ease';
+  setTimeout(() => { row.remove(); updateItemCount(); }, 200);
+}
+
+function updateItemCount() {
+  const rows = document.querySelectorAll('.meal-item-row');
+  document.getElementById('itemCount').textContent = `${rows.length} item${rows.length !== 1 ? 's' : ''}`;
+  rows.forEach(row => {
+    const btn = row.querySelector('.meal-item-remove');
+    if (btn) btn.style.display = rows.length > 1 ? 'flex' : 'none';
+  });
+}
+
+// Init on load
+document.addEventListener('DOMContentLoaded', () => {
+  feather.replace({'aria-hidden': 'true'});
+  initFoodSearch(0);
+  updateItemCount();
+
+  // Pre-select meal type from URL param
+  const params = new URLSearchParams(window.location.search);
+  const mt = params.get('meal_type');
+  if (mt) {
+    const radio = document.getElementById(`mt_${mt}`);
+    if (radio) radio.checked = true;
+  }
+
+  // Form validation
+  document.getElementById('mealForm').addEventListener('submit', function(e) {
+    const rows = document.querySelectorAll('.meal-item-row');
+    let hasFood = false;
+    rows.forEach(row => {
+      const searchInput = row.querySelector('.food-search, input[name="custom_food_name[]"]');
+      if (searchInput && searchInput.value.trim()) hasFood = true;
+    });
+    if (!hasFood) {
+      e.preventDefault();
+      const errDiv = document.getElementById('formErrors');
+      errDiv.style.display = 'block';
+      errDiv.querySelector('.gg-alert-danger').textContent =
+        'Please add at least one food item before saving.';
+      errDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  });
+});
+</script>
+{% endblock %}

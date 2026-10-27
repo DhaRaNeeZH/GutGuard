@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="gg-page">
+<div class="container" style="max-width:620px">
+  <div class="gg-page-header">
+    <h1 class="gg-page-title">Your Profile</h1>
+  </div>
+
+  <!-- Account Info -->
+  <div class="gg-card mb-4">
+    <h2 class="gg-card-title mb-4">Account Information</h2>
+    <dl class="row g-2">
+      <dt class="col-sm-4 text-muted" style="font-size:0.875rem">Name</dt>
+      <dd class="col-sm-8">{{ current_user.display_name }}</dd>
+      <dt class="col-sm-4 text-muted" style="font-size:0.875rem">Email</dt>
+      <dd class="col-sm-8">{{ current_user.email }}</dd>
+      {% if current_user.student_id %}
+      <dt class="col-sm-4 text-muted" style="font-size:0.875rem">Student ID</dt>
+      <dd class="col-sm-8">{{ current_user.student_id }}</dd>
+      {% endif %}
+      <dt class="col-sm-4 text-muted" style="font-size:0.875rem">Role</dt>
+      <dd class="col-sm-8">{{ current_user.role.name | capitalize }}</dd>
+      <dt class="col-sm-4 text-muted" style="font-size:0.875rem">Member since</dt>
+      <dd class="col-sm-8">{{ current_user.created_at.strftime("%d %B %Y") }}</dd>
+    </dl>
+  </div>
+
+  <!-- Change Password -->
+  <div class="gg-card mb-4">
+    <h2 class="gg-card-title mb-4">Change Password</h2>
+    <form method="POST" action="{{ url_for('auth.profile') }}" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        <label class="gg-label" for="current_password">Current Password</label>
+        <input type="password" name="current_password" id="current_password" class="gg-input"
+               autocomplete="current-password" required>
+        {% if form.current_password.errors %}
+        <div class="gg-form-error">{{ form.current_password.errors[0] }}</div>
+        {% endif %}
+      </div>
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="gg-label" for="new_password">New Password</label>
+          <input type="password" name="new_password" id="new_password" class="gg-input"
+                 autocomplete="new-password" required>
+        </div>
+        <div class="col-md-6">
+          <label class="gg-label" for="confirm_password">Confirm New Password</label>
+          <input type="password" name="confirm_password" id="confirm_password" class="gg-input"
+                 autocomplete="new-password" required>
+        </div>
+      </div>
+      <button type="submit" class="gg-btn gg-btn-primary">Update Password</button>
+    </form>
+  </div>
+
+  <!-- Privacy notice -->
+  <div class="gg-card mb-4" style="background: var(--color-info-light); border-color: #BAE6FD">
+    <h2 class="gg-card-title mb-3" style="font-size: 1rem; color: var(--color-info)">Your Data &amp; Privacy</h2>
+    <ul class="text-muted" style="font-size:0.875rem;padding-left:1.25rem;margin:0">
+      <li>Your meal records are private and visible only to you.</li>
+      <li>Your data is stored securely in GutGuard and is not shared with third parties.</li>
+      <li>Reports are generated on demand and are never automatically shared.</li>
+      <li>You have the right to delete your account and all meal records at any time.</li>
+      <li>This is an MCA mini project for personal habit tracking only.</li>
+    </ul>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="gg-card" style="border-color: #FECACA; background: #FEF2F2">
+    <h2 class="gg-card-title mb-2 text-danger" style="font-size: 1rem">Danger Zone</h2>
+    <p class="text-muted mb-3" style="font-size:0.85rem">
+      Permanently delete your GutGuard account and all associated meal logs, water logs, and reports. This action cannot be undone.
+    </p>
+    <button type="button" class="gg-btn gg-btn-danger gg-btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+      Delete Account &amp; Data
+    </button>
+  </div>
+
+</div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+    <div class="modal-content" style="border-radius: var(--radius-xl); border: 2px solid #FECACA;">
+      <div class="modal-header">
+        <h3 class="modal-title fs-6 fw-bold text-danger" id="deleteAccountModalLabel">Delete Account Permanently?</h3>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" style="font-size: 0.9rem;">
+        This will immediately wipe your account, meal logs, water records, and past reports from the database. Are you absolutely sure?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="gg-btn gg-btn-ghost gg-btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <form method="POST" action="{{ url_for('auth.delete_account') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="gg-btn gg-btn-danger gg-btn-sm">Yes, Delete Everything</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Food Catalogue{% endblock %}
+
+{% block content %}
+<div class="gg-page">
+<div class="container">
+
+  <!-- Header -->
+  <div class="gg-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+    <div>
+      <nav aria-label="Breadcrumb" class="mb-2">
+        <ol class="breadcrumb mb-0" style="font-size:0.875rem">
+          <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Food Catalogue</li>
+        </ol>
+      </nav>
+      <h1 class="gg-page-title">Campus Food Catalogue</h1>
+      <p class="gg-page-subtitle">
+        Explore standard college mess items, canteen snacks, regional dishes, and healthy choices.
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('meals.log_meal') }}" class="gg-btn gg-btn-accent">
+        <i data-feather="plus" aria-hidden="true"></i> Log a Meal
+      </a>
+    </div>
+  </div>
+
+  <!-- Search & Filter Bar -->
+  <div class="gg-card mb-4" style="padding: 1.25rem 1.5rem;">
+    <form method="get" action="{{ url_for('catalogue.browse') }}" class="row g-3 align-items-center">
+      <div class="col-md-6 col-lg-7">
+        <div class="position-relative">
+          <i data-feather="search" aria-hidden="true"
+             style="position:absolute; left:1rem; top:50%; transform:translateY(-50%); color:var(--color-foreground-faint); width:18px; height:18px;"></i>
+          <input type="search" name="q" value="{{ query_str or '' }}"
+                 class="form-control" style="padding-left: 2.75rem; border-radius: var(--radius-md); height: 44px;"
+                 placeholder="Search by food name or alias (e.g. Dosa, Poha, Dal, Chai, Maggi)..."
+                 aria-label="Search foods">
+        </div>
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <select name="category_id" class="form-select" style="border-radius: var(--radius-md); height: 44px;" aria-label="Filter by category">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+          <option value="{{ cat.id }}" {% if selected_cat == cat.id %}selected{% endif %}>
+            {{ cat.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 col-lg-2 d-flex gap-2">
+        <button type="submit" class="gg-btn gg-btn-primary w-100" style="height: 44px; justify-content:center;">
+          Filter
+        </button>
+        {% if query_str or selected_cat %}
+        <a href="{{ url_for('catalogue.browse') }}" class="gg-btn gg-btn-ghost" title="Clear filters" style="height:44px; padding:0 0.75rem;">
+          <i data-feather="x" aria-hidden="true"></i>
+        </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Category Pills Navigation -->
+  <div class="d-flex flex-wrap gap-2 mb-4" role="navigation" aria-label="Quick category filters">
+    <a href="{{ url_for('catalogue.browse', q=query_str) }}"
+       class="gg-btn gg-btn-sm {% if not selected_cat %}gg-btn-primary{% else %}gg-btn-ghost{% endif %}">
+      All Items
+    </a>
+    {% for cat in categories %}
+    <a href="{{ url_for('catalogue.browse', category_id=cat.id, q=query_str) }}"
+       class="gg-btn gg-btn-sm {% if selected_cat == cat.id %}gg-btn-primary{% else %}gg-btn-ghost{% endif %}">
+      {{ cat.name }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Food Items Grid -->
+  {% if foods %}
+  <div class="row g-3">
+    {% for food in foods %}
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <div class="gg-card h-100 d-flex flex-column" style="padding: 1.25rem; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+          <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--color-foreground); margin:0;">
+            {{ food.name }}
+          </h3>
+          {% if food.is_vegetarian %}
+          <span class="badge rounded-pill" style="background: rgba(5,150,105,0.12); color: var(--color-accent-dark); font-weight:600; font-size:0.75rem;" title="Vegetarian">
+            ● Veg
+          </span>
+          {% else %}
+          <span class="badge rounded-pill" style="background: rgba(220,38,38,0.12); color: #DC2626; font-weight:600; font-size:0.75rem;" title="Non-Vegetarian">
+            ▲ Non-Veg
+          </span>
+          {% endif %}
+        </div>
+
+        <!-- Badges & Category -->
+        <div class="d-flex flex-wrap gap-1 mb-2">
+          {% if food.category %}
+          <span class="badge" style="background: var(--color-border-subtle); color: var(--color-foreground-muted); font-size:0.75rem;">
+            {{ food.category.name }}
+          </span>
+          {% endif %}
+          {% if food.region %}
+          <span class="badge" style="background: rgba(217,119,6,0.1); color: var(--color-primary-dark); font-size:0.75rem;">
+            {{ food.region }}
+          </span>
+          {% endif %}
+          {% if food.is_verified %}
+          <span class="badge" style="background: rgba(16,185,129,0.1); color: #047857; font-size:0.75rem;" title="Verified college food item">
+            ✓ Verified
+          </span>
+          {% endif %}
+        </div>
+
+        {% if food.description %}
+        <p class="text-muted small mb-3 flex-grow-1" style="line-height:1.4;">
+          {{ food.description }}
+        </p>
+        {% else %}
+        <div class="flex-grow-1"></div>
+        {% endif %}
+
+        <!-- Quick Action -->
+        <div class="pt-2 border-top d-flex justify-content-between align-items-center">
+          <small class="text-muted" style="font-size:0.75rem;">
+            {{ food.data_source or 'Campus Standard' }}
+          </small>
+          <a href="{{ url_for('meals.log_meal') }}" class="gg-btn gg-btn-ghost gg-btn-sm" style="font-size:0.75rem; padding: 0.25rem 0.5rem;" title="Log this in your meal journal">
+            <i data-feather="plus" aria-hidden="true" style="width:14px; height:14px;"></i> Log
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="mt-4 text-center text-muted small">
+    Showing {{ foods|length }} item(s){% if query_str %} matching "{{ query_str }}"{% endif %}.
+  </div>
+
+  {% else %}
+  <div class="gg-card text-center" style="padding: 4rem 2rem;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">🍽️</div>
+    <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--color-foreground);">No foods found</h3>
+    <p class="text-muted mb-3" style="max-width: 450px; margin: 0 auto;">
+      {% if query_str %}
+      No food matches "{{ query_str }}". You can log it anyway as a custom food item when recording your meal!
+      {% else %}
+      No items found in this category.
+      {% endif %}
+    </p>
+    <div class="d-flex justify-content-center gap-2">
+      <a href="{{ url_for('catalogue.browse') }}" class="gg-btn gg-btn-ghost">View All Foods</a>
+      <a href="{{ url_for('meals.log_meal') }}" class="gg-btn gg-btn-accent">Log Meal with Custom Item</a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+{% endblock %}

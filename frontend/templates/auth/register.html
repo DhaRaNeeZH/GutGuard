@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Create Account{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5" style="background: linear-gradient(135deg, #FFF8ED 0%, #FFFBEB 60%, #ECFDF5 100%);">
+  <div style="width: 100%; max-width: 500px; padding: 0 1rem;">
+
+    <div class="text-center mb-5">
+      <a href="{{ url_for('main.landing') }}" class="d-inline-flex align-items-center gap-2 text-decoration-none mb-3">
+        <div style="width:44px;height:44px;background:linear-gradient(135deg,var(--color-primary),var(--color-primary-light));border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-primary)">
+          <svg width="22" height="22" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <span style="font-family:var(--font-heading);font-size:1.5rem;font-weight:700;color:var(--color-primary)">GutGuard</span>
+      </a>
+      <h1 style="font-size:var(--text-2xl);font-family:var(--font-heading)">Start your meal journal</h1>
+      <p class="text-muted">Create a free account to track your dietary habits.</p>
+    </div>
+
+    <div class="gg-card shadow-gg-lg">
+      <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="mb-4">
+          <label class="gg-label" for="display_name">Your Name</label>
+          <input type="text" name="display_name" id="display_name" class="gg-input"
+                 value="{{ form.display_name.data or '' }}" autocomplete="name" required
+                 placeholder="E.g. Priya Sharma"
+                 {% if form.display_name.errors %}aria-describedby="name-error" aria-invalid="true"{% endif %}>
+          {% if form.display_name.errors %}
+          <div id="name-error" class="gg-form-error" role="alert">{{ form.display_name.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-4">
+          <label class="gg-label" for="email">College Email</label>
+          <input type="email" name="email" id="email" class="gg-input"
+                 value="{{ form.email.data or '' }}" autocomplete="email" required
+                 placeholder="you@college.edu"
+                 {% if form.email.errors %}aria-describedby="email-error" aria-invalid="true"{% endif %}>
+          {% if form.email.errors %}
+          <div id="email-error" class="gg-form-error" role="alert">{{ form.email.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-4">
+          <label class="gg-label" for="student_id">
+            Roll / Student ID <span class="text-muted fw-normal">(optional)</span>
+          </label>
+          <input type="text" name="student_id" id="student_id" class="gg-input"
+                 value="{{ form.student_id.data or '' }}" autocomplete="off"
+                 placeholder="E.g. CS2024001">
+          <p class="text-muted" style="font-size:0.78rem;margin-top:4px">
+            Used as a participant ID in anonymised analysis. Not shared publicly.
+          </p>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="gg-label" for="password">Password</label>
+            <input type="password" name="password" id="password" class="gg-input"
+                   autocomplete="new-password" required
+                   placeholder="Min. 8 characters"
+                   {% if form.password.errors %}aria-describedby="pw-error" aria-invalid="true"{% endif %}>
+            {% if form.password.errors %}
+            <div id="pw-error" class="gg-form-error" role="alert">{{ form.password.errors[0] }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="gg-label" for="confirm_password">Confirm Password</label>
+            <input type="password" name="confirm_password" id="confirm_password" class="gg-input"
+                   autocomplete="new-password" required
+                   placeholder="Repeat password"
+                   {% if form.confirm_password.errors %}aria-describedby="cpw-error" aria-invalid="true"{% endif %}>
+            {% if form.confirm_password.errors %}
+            <div id="cpw-error" class="gg-form-error" role="alert">{{ form.confirm_password.errors[0] }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Privacy notice -->
+        <div class="gg-alert gg-alert-info mb-4" style="font-size:0.82rem">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <div>
+            Your meal data is private to you. We collect only what is needed for the habit tracking features.
+            See your <a href="{{ url_for('auth.profile') }}" style="color:inherit;font-weight:600">Profile</a> at any time to review your data.
+          </div>
+        </div>
+
+        <button type="submit" class="gg-btn gg-btn-primary w-100 gg-btn-lg">
+          Create My Account
+        </button>
+      </form>
+
+      <div class="text-center mt-4 pt-3 border-top">
+        <span class="text-muted" style="font-size:0.875rem">Already have an account?</span>
+        <a href="{{ url_for('auth.login') }}" class="ms-1" style="color:var(--color-accent);font-weight:600">Sign in</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

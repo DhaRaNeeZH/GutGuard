@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="gg-page">
+<div class="container" style="max-width:700px">
+  <div class="gg-page-header">
+    <h1 class="gg-page-title">Meal Habit Reports</h1>
+    <p class="gg-page-subtitle">Generate a personal PDF summary of your recorded meal habits.</p>
+  </div>
+
+  <div class="gg-alert gg-alert-warning mb-5">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div>
+      <strong>Reports are personal summaries only.</strong>
+      They are generated from your self-logged meal data and include a clear disclaimer.
+      They are <strong>not medical assessments</strong>. Sharing a report with a campus health professional is entirely optional and must be done by you directly.
+    </div>
+  </div>
+
+  <!-- Generate form -->
+  <div class="gg-card mb-5">
+    <h2 class="gg-card-title mb-4">Generate a New Report</h2>
+    <form method="POST" action="{{ url_for('reports.generate') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <fieldset class="mb-4">
+        <legend class="gg-label mb-3">Select period</legend>
+        <div class="d-flex flex-wrap gap-3">
+          {% for value, label in [("week","This Week"),("month","This Month"),("custom","Custom Range")] %}
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="period" id="p_{{ value }}"
+                   value="{{ value }}" {% if value=='week' %}checked{% endif %}
+                   onchange="toggleCustom(this.value)">
+            <label class="form-check-label" for="p_{{ value }}">{{ label }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </fieldset>
+
+      <div id="customRange" style="display:none" class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="gg-label" for="start_date">From</label>
+          <input type="date" name="start_date" id="start_date" class="gg-input">
+        </div>
+        <div class="col-md-6">
+          <label class="gg-label" for="end_date">To</label>
+          <input type="date" name="end_date" id="end_date" class="gg-input">
+        </div>
+      </div>
+
+      <button type="submit" class="gg-btn gg-btn-primary">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+        Download PDF Report
+      </button>
+    </form>
+  </div>
+
+  <!-- Past reports -->
+  {% if reports %}
+  <div class="gg-card">
+    <h2 class="gg-card-title mb-4">Previously Generated Reports</h2>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <caption class="visually-hidden">List of generated reports</caption>
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Generated</th>
+            <th class="text-end">File</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in reports %}
+          <tr>
+            <td style="font-size:0.875rem">
+              {% if r.period_start and r.period_end %}
+              {{ r.period_start.strftime("%d %b %Y") }} – {{ r.period_end.strftime("%d %b %Y") }}
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-muted" style="font-size:0.875rem">{{ r.generated_at.strftime("%d %b %Y %H:%M") }}</td>
+            <td class="text-end">
+              <a href="{{ url_for('reports.download', report_id=r.id) }}" class="gg-btn gg-btn-ghost gg-btn-sm" style="font-size:0.75rem; padding: 0.25rem 0.6rem;">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                PDF
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function toggleCustom(val) {
+  document.getElementById('customRange').style.display = val === 'custom' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

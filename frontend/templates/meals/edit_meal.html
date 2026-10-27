@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Edit Meal{% endblock %}
+{% block content %}
+<div class="gg-page">
+<div class="container" style="max-width:600px">
+  <div class="gg-page-header">
+    <nav aria-label="Breadcrumb">
+      <ol class="breadcrumb" style="font-size:0.85rem">
+        <li class="breadcrumb-item"><a href="{{ url_for('meals.journal', date=meal.meal_date.date().isoformat()) }}">Journal</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Edit Meal</li>
+      </ol>
+    </nav>
+    <h1 class="gg-page-title">Edit Meal</h1>
+    <p class="gg-page-subtitle">Update the meal type, time, or notes. To change food items, delete and re-log the meal.</p>
+  </div>
+
+  <div class="gg-card">
+    <form method="POST" action="{{ url_for('meals.edit_meal', meal_id=meal.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="mb-4">
+        <label class="gg-label">Meal Type</label>
+        <div class="meal-type-selector">
+          {% for value, label in [("breakfast","Breakfast"),("lunch","Lunch"),("dinner","Dinner"),("snack","Snack")] %}
+          <input type="radio" name="meal_type" id="mt_{{ value }}" value="{{ value }}" class="meal-type-option"
+                 {% if meal.meal_type == value %}checked{% endif %}>
+          <label for="mt_{{ value }}" class="meal-type-label">{{ label }}</label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="gg-label" for="meal_date">Date &amp; Time</label>
+        <input type="datetime-local" name="meal_date" id="meal_date" class="gg-input"
+               value="{{ meal.meal_date.strftime('%Y-%m-%dT%H:%M') }}" required>
+      </div>
+
+      <div class="mb-4">
+        <label class="gg-label">Foods in this meal</label>
+        {% if meal.items %}
+        <div class="d-flex flex-wrap gap-2">
+          {% for item in meal.items %}
+          <span class="gg-badge gg-badge-muted">{{ item.food_name }}{% if item.quantity %} · {{ item.quantity }}{{ item.unit }}{% endif %}</span>
+          {% endfor %}
+        </div>
+        <p class="text-muted mt-2" style="font-size:0.8rem">Food items cannot be edited here. Delete and re-log to change items.</p>
+        {% else %}
+        <p class="text-muted" style="font-size:0.875rem">No food items.</p>
+        {% endif %}
+      </div>
+
+      <div class="mb-5">
+        <label class="gg-label" for="notes">Notes</label>
+        <textarea name="notes" id="notes" class="gg-textarea">{{ meal.notes or '' }}</textarea>
+      </div>
+
+      <div class="d-flex gap-3">
+        <button type="submit" class="gg-btn gg-btn-primary">Save Changes</button>
+        <a href="{{ url_for('meals.journal', date=meal.meal_date.date().isoformat()) }}" class="gg-btn gg-btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+</div>
+{% endblock %}

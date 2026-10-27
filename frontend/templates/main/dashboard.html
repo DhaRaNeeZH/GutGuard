@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="gg-page">
+<div class="container">
+
+  <!-- Page Header -->
+  <div class="gg-page-header d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div>
+      <h1 class="gg-page-title">
+        Good {{ "morning" if now.hour < 12 else "afternoon" if now.hour < 17 else "evening" }},
+        {{ current_user.display_name.split()[0] }}! 👋
+      </h1>
+      <p class="gg-page-subtitle">
+        {{ today.strftime("%A, %d %B %Y") }} &mdash;
+        {% if todays_meals %}
+          You've logged {{ todays_meals | length }} meal{{ 's' if todays_meals | length != 1 }} today.
+        {% else %}
+          No meals logged yet today. Get started below!
+        {% endif %}
+      </p>
+    </div>
+    <a href="{{ url_for('meals.log_meal') }}" class="gg-btn gg-btn-primary">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Log a Meal
+    </a>
+  </div>
+
+  <!-- Stat Row -->
+  <div class="row g-3 mb-5">
+    <div class="col-6 col-md-3">
+      <div class="gg-stat-card">
+        <div class="gg-stat-icon amber">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div>
+          <div class="gg-stat-value">{{ todays_meals | length }}</div>
+          <div class="gg-stat-label">Meals Today</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="gg-stat-card">
+        <div class="gg-stat-icon green">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div>
+          <div class="gg-stat-value">{{ consistency_pct }}%</div>
+          <div class="gg-stat-label">Week Consistency</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="gg-stat-card">
+        <div class="gg-stat-icon blue">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        </div>
+        <div>
+          <div class="gg-stat-value">{{ "%.0f" | format(water_ml) }}<small style="font-size:1rem">ml</small></div>
+          <div class="gg-stat-label">Water Today</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="gg-stat-card">
+        <div class="gg-stat-icon amber">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        </div>
+        <div>
+          <div class="gg-stat-value">{{ week_meals | length }}</div>
+          <div class="gg-stat-label">Meals This Week</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left: Today's Timeline -->
+    <div class="col-lg-7">
+      <div class="gg-card">
+        <div class="gg-card-header">
+          <h2 class="gg-card-title">Today's Meal Timeline</h2>
+          <a href="{{ url_for('meals.journal', date=today.isoformat()) }}" class="gg-btn gg-btn-ghost gg-btn-sm">
+            View Journal
+          </a>
+        </div>
+
+        {% if todays_meals %}
+        <div class="meal-timeline" style="padding-left: 2.5rem;">
+          {% for meal in todays_meals %}
+          <div class="meal-entry" style="margin-bottom: 1rem;">
+            <div style="position:absolute;left:-2.5rem;top:0.25rem;width:28px;height:28px;
+              background:{% if meal.meal_type=='breakfast' %}var(--color-primary-light){% elif meal.meal_type=='lunch' %}var(--color-accent-light){% elif meal.meal_type=='dinner' %}#7C3AED{% else %}var(--color-info){% endif %};
+              border-radius:50%;display:flex;align-items:center;justify-content:center;
+              box-shadow:0 0 0 4px var(--color-border-subtle)">
+              <svg width="14" height="14" fill="white" viewBox="0 0 24 24" aria-hidden="true">
+                {% if meal.meal_type=='breakfast' %}<path d="M12 2a10 10 0 0 1 10 10"/>
+                {% elif meal.meal_type=='lunch'    %}<circle cx="12" cy="12" r="4"/>
+                {% elif meal.meal_type=='dinner'   %}<path d="M12 3v1m0 16v1M3 12h1m16 0h1"/>
+                {% else %}<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>{% endif %}
+              </svg>
+            </div>
+            <div class="gg-card" style="padding: 0.75rem 1rem; margin-bottom: 0; border-color: var(--color-border-subtle)">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="gg-badge {% if meal.meal_type=='breakfast' %}gg-badge-primary{% elif meal.meal_type=='lunch' %}gg-badge-accent{% elif meal.meal_type=='dinner' %}gg-badge-info{% else %}gg-badge-warning{% endif %}">
+                      {{ meal.meal_type | capitalize }}
+                    </span>
+                    <span class="text-muted" style="font-size:0.8rem">{{ meal.meal_date.strftime("%I:%M %p") }}</span>
+                  </div>
+                  <div style="font-size: 0.875rem; margin-top: 4px; color: var(--color-foreground)">
+                    {% if meal.items %}
+                      {{ meal.items | map(attribute='food_name') | join(', ') | truncate(80) }}
+                    {% else %}
+                      <span class="text-muted">No food items recorded.</span>
+                    {% endif %}
+                  </div>
+                  {% if meal.notes %}
+                  <div class="text-muted" style="font-size:0.78rem;margin-top:2px;font-style:italic">{{ meal.notes }}</div>
+                  {% endif %}
+                </div>
+                <div class="d-flex gap-1">
+                  <a href="{{ url_for('meals.edit_meal', meal_id=meal.id) }}" class="gg-btn gg-btn-ghost gg-btn-sm"
+                     title="Edit meal" aria-label="Edit {{ meal.meal_type }}">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="gg-empty" style="padding: 3rem 1rem;">
+          <div class="gg-empty-icon">🍽️</div>
+          <h3 class="gg-empty-title">No meals logged today</h3>
+          <p class="gg-empty-subtitle">Log your first meal to start building your habit record.</p>
+          <a href="{{ url_for('meals.log_meal') }}" class="gg-btn gg-btn-primary">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Log First Meal
+          </a>
+        </div>
+        {% endif %}
+
+        <!-- Meal type quick-add shortcuts -->
+        <div class="mt-4 pt-3 border-top">
+          <p class="text-muted mb-2" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Quick Log</p>
+          <div class="d-flex gap-2 flex-wrap">
+            {% for mt, label in [("breakfast","Breakfast"),("lunch","Lunch"),("dinner","Dinner"),("snack","Snack")] %}
+            <a href="{{ url_for('meals.log_meal') }}?meal_type={{ mt }}"
+               class="gg-btn gg-btn-ghost gg-btn-sm">{{ label }}</a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Weekly Chart + Summary -->
+    <div class="col-lg-5">
+      <!-- Consistency ring -->
+      <div class="gg-card mb-4 text-center">
+        <h2 class="gg-card-title mb-3">This Week's Consistency</h2>
+        <div class="consistency-ring" id="consistencyRing" aria-label="Meal logging consistency: {{ consistency_pct }}%">
+          <svg viewBox="0 0 120 120" width="120" height="120">
+            <circle class="ring-track" cx="60" cy="60" r="52"/>
+            <circle class="ring-fill" cx="60" cy="60" r="52"
+              stroke-dasharray="326.73"
+              stroke-dashoffset="{{ 326.73 * (1 - consistency_pct / 100) | round(2) }}"
+              id="ringFill"/>
+          </svg>
+          <div class="consistency-ring-label">
+            <div style="font-family:var(--font-heading);font-size:1.75rem;font-weight:700;line-height:1;color:var(--color-accent)">
+              {{ consistency_pct }}%
+            </div>
+            <div style="font-size:0.7rem;color:var(--color-foreground-muted)">Logged</div>
+          </div>
+        </div>
+        <p class="text-muted mt-2" style="font-size:0.82rem">
+          {{ days_logged }} of {{ days_in_week }} days with a meal logged this week.
+          <br>
+          <em style="font-size:0.75rem">Based on days elapsed, not a medical measure.</em>
+        </p>
+
+        <!-- Meal type breakdown -->
+        <div class="row g-2 mt-2 text-center">
+          {% for mt, color, label in [
+            ("breakfast","var(--color-primary)","Breakfast"),
+            ("lunch","var(--color-accent)","Lunch"),
+            ("dinner","#7C3AED","Dinner"),
+            ("snack","var(--color-info)","Snack")
+          ] %}
+          <div class="col-3">
+            <div style="font-family:var(--font-heading);font-size:1.4rem;font-weight:700;color:{{ color }}">
+              {{ meal_type_counts[mt] }}
+            </div>
+            <div class="text-muted" style="font-size:0.7rem">{{ label }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Weekly Chart -->
+      <div class="gg-card">
+        <h2 class="gg-card-title mb-4">Meals per Day (This Week)</h2>
+        <div class="gg-chart-container" style="height: 200px;">
+          <canvas id="weeklyChart" aria-label="Bar chart showing meals logged per day this week" role="img"></canvas>
+        </div>
+        <p class="text-muted text-center mt-2" style="font-size:0.75rem">
+          Based on your logged meals. Unlogged days are shown as 0 — not confirmed as skipped.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  {% if recent_meals %}
+  <div class="gg-card mt-4">
+    <div class="gg-card-header">
+      <h2 class="gg-card-title">Recent Activity</h2>
+      <a href="{{ url_for('meals.journal') }}" class="gg-btn gg-btn-ghost gg-btn-sm">Full Journal</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <caption class="visually-hidden">Recent meal entries</caption>
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Type</th>
+            <th scope="col">Foods</th>
+            <th scope="col" class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for meal in recent_meals %}
+          <tr>
+            <td style="white-space:nowrap;font-size:0.875rem;color:var(--color-foreground-muted)">
+              {{ meal.meal_date.strftime("%d %b") }}
+            </td>
+            <td>
+              <span class="gg-badge {% if meal.meal_type=='breakfast' %}gg-badge-primary{% elif meal.meal_type=='lunch' %}gg-badge-accent{% elif meal.meal_type=='dinner' %}gg-badge-info{% else %}gg-badge-warning{% endif %}">
+                {{ meal.meal_type | capitalize }}
+              </span>
+            </td>
+            <td style="font-size:0.875rem">
+              {% if meal.items %}
+                {{ meal.items | map(attribute='food_name') | join(', ') | truncate(60) }}
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{{ url_for('meals.edit_meal', meal_id=meal.id) }}" class="gg-btn gg-btn-ghost gg-btn-sm"
+                 aria-label="Edit {{ meal.meal_type }} on {{ meal.meal_date.strftime('%d %b') }}">Edit</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Insights Teaser -->
+  <div class="gg-card mt-4" style="background: linear-gradient(135deg, #ECFDF5, #FFFBEB); border-color: var(--color-accent-light);">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <h2 class="gg-card-title">Ready to check your weekly habits?</h2>
+        <p class="text-muted mb-0">See meal timing trends, food category patterns, and more.</p>
+      </div>
+      <a href="{{ url_for('insights.index') }}" class="gg-btn gg-btn-accent">
+        View Insights
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </div>
+  </div>
+
+</div><!-- /container -->
+</div><!-- /gg-page -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  feather.replace({'aria-hidden': 'true'});
+
+  // Weekly bar chart
+  const ctx = document.getElementById('weeklyChart');
+  if (!ctx) return;
+
+  const mealTypeData = {{ meal_type_counts | tojson }};
+  const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  // Build per-day counts from server data for a simple week view
+  const weekMealsData = {{ week_meals | length }};
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Meals Logged',
+        data: [
+          {% set ns = namespace(data=[]) %}
+          {% for i in range(7) %}
+            {% set day = (today | string | replace('-', '') | int) %}
+            0,
+          {% endfor %}
+        ],
+        backgroundColor: 'rgba(5, 150, 105, 0.7)',
+        borderColor:     'rgba(5, 150, 105, 1)',
+        borderWidth:     2,
+        borderRadius:    8,
+        borderSkipped:   false,
+      }]
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15,23,42,0.9)',
+          padding:         10,
+          cornerRadius:    10,
+          callbacks: {
+            label: ctx => `${ctx.parsed.y} meal${ctx.parsed.y !== 1 ? 's' : ''}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks:       { stepSize: 1, color: 'var(--color-foreground-muted)' },
+          grid:        { color: 'rgba(0,0,0,0.05)' }
+        },
+        x: {
+          ticks: { color: 'var(--color-foreground-muted)' },
+          grid:  { display: false }
+        }
+      }
+    }
+  });
+
+  // Fetch real weekly data and update chart
+  fetch('{{ url_for("insights.weekly_data_api") }}')
+    .then(r => r.json())
+    .then(data => {
+      const chart = Chart.getChart(ctx);
+      if (chart) {
+        chart.data.labels = data.labels;
+        chart.data.datasets[0].data = data.meals_count;
+        chart.update();
+      }
+    })
+    .catch(() => { /* fail silently on dashboard */ });
+});
+</script>
+{% endblock %}
